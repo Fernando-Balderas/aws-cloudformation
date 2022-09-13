@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Amplify app template
+
+Parameters:
+
+  GitAccessToken:
+    Type: String
+    Description: GitHub personal access token for programmatic actions, e.g. ghp_something
+
+  ApiUrl:
+    Type: String
+    Description: URL to consume the backend api, e.g. https://something
+
+  AwsRegion:
+    Type: String
+    Default: us-east-1
+    Description: Code name of aws region used for cognito
+
+  UserPoolClientId:
+    Type: String
+    Description: Client id used for cognito
+
+  UserPoolId:
+    Type: String
+    Description: User pool id used for cognito
+
+
+Resources:
+
+  AmplifyUI:
+    Type: AWS::Amplify::App
+    Properties: 
+      AccessToken: !Ref GitAccessToken
+      BuildSpec: |-
+        version: 1
+        frontend:
+          phases:
+            preBuild:
+              commands:
+                - yarn install
+            build:
+              commands:
+                - yarn run build
+          artifacts:
+            baseDirectory: build
+            files:
+              - '**/*'
+          cache:
+            paths:
+              - node_modules/**/*
+      Description: Amplify app deployed with cloudformation
+      EnvironmentVariables: 
+        - Name: REACT_APP_API_URL
+          Value: !Ref ApiUrl
+        - Name: REACT_APP_AWS_REGION
+          Value: !Ref AwsRegion
+        - Name: REACT_APP_AWS_USER_POOL_CLIENT_ID
+          Value: !Ref UserPoolClientId
+        - Name: REACT_APP_AWS_USER_POOL_ID
+          Value: !Ref UserPoolId
+      Name: CF Serverless UI
+      Repository: https://github.com/Fernando-Balderas/serverless-demo
+  
+  AmplifyBranch:
+    Type: AWS::Amplify::Branch
+    Properties:
+      AppId: !GetAtt AmplifyUI.AppId
+      BranchName: main
+      EnableAutoBuild: true
+      Stage: PRODUCTION
+
+
+Outputs:
+
+  AmplifyUIARN:
+    Value: !Ref AmplifyUI
+
+  BranchUrl:
+    Value: !GetAtt AmplifyUI.DefaultDomain
